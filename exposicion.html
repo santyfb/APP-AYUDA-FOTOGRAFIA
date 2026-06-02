@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Triángulo de Exposición</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0a0a0f;
+  --surface:#13131a;
+  --surface2:#1c1c26;
+  --border:rgba(255,255,255,0.07);
+  --border2:rgba(255,255,255,0.12);
+  --iso:#00e5ff;
+  --ap:#ff6b35;
+  --vel:#a8ff3e;
+  --text:#f0f0f0;
+  --muted:#666;
+  --muted2:#999;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding-bottom:3rem;}
+
+/* HEADER */
+.header{padding:1.5rem 1.25rem 1rem;text-align:center;border-bottom:0.5px solid var(--border);}
+.kicker{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;margin-bottom:0.4rem;}
+.title{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;letter-spacing:0.05em;background:linear-gradient(135deg,#fff 40%,#555);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:0.5px solid var(--border);padding:0 1rem;}
+.tab{flex:1;padding:0.75rem 0.5rem;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;}
+.tab.active{color:var(--text);border-bottom-color:#fff;}
+.tab:hover:not(.active){color:var(--muted2);}
+
+/* PANELS */
+.panel{display:none;padding:1.25rem;}
+.panel.active{display:block;}
+
+/* SCENARIO GRID */
+.scenario-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem;}
+.scenario-btn{background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:0.85rem 0.5rem;text-align:center;cursor:pointer;transition:all 0.2s;}
+.scenario-btn.active{border-color:rgba(255,255,255,0.3);background:var(--surface2);}
+.scenario-btn .s-icon{font-size:1.5rem;margin-bottom:0.3rem;}
+.scenario-btn .s-name{font-size:12px;font-weight:500;color:var(--text);display:block;}
+.scenario-btn .s-sub{font-size:10px;color:var(--muted);display:block;margin-top:2px;}
+
+/* RESULT CARD */
+.result-card{background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem;}
+.result-title{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;}
+.values-row{display:flex;gap:8px;margin-bottom:1rem;}
+.val-block{flex:1;background:var(--surface2);border-radius:8px;padding:0.75rem 0.5rem;text-align:center;border:0.5px solid var(--border);}
+.val-label{font-size:10px;font-family:'Space Mono',monospace;margin-bottom:4px;}
+.val-num{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:0.05em;}
+.val-block.iso .val-label{color:var(--iso);}
+.val-block.iso .val-num{color:var(--iso);}
+.val-block.ap .val-label{color:var(--ap);}
+.val-block.ap .val-num{color:var(--ap);}
+.val-block.vel .val-label{color:var(--vel);}
+.val-block.vel .val-num{color:var(--vel);}
+.result-tip{font-size:12px;color:var(--muted2);line-height:1.6;padding:0.75rem;background:rgba(255,255,255,0.03);border-radius:8px;border-left:2px solid rgba(255,255,255,0.1);}
+.result-tip strong{color:var(--text);font-weight:500;}
+
+/* MINI TRIANGLE */
+.mini-triangle{width:100%;height:100px;margin:0.75rem 0;}
+
+/* SLIDERS PANEL */
+.slider-section{margin-bottom:1.5rem;}
+.slider-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;}
+.slider-name{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:0.05em;}
+.slider-name.iso{color:var(--iso);}
+.slider-name.ap{color:var(--ap);}
+.slider-name.vel{color:var(--vel);}
+.slider-value{font-family:'Space Mono',monospace;font-size:13px;color:var(--text);}
+.slider-track{position:relative;height:6px;background:rgba(255,255,255,0.08);border-radius:3px;margin-bottom:0.4rem;}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:transparent;outline:none;cursor:pointer;position:relative;z-index:2;}
+input[type=range].iso-range::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--iso);box-shadow:0 0 8px var(--iso);cursor:pointer;}
+input[type=range].ap-range::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--ap);box-shadow:0 0 8px var(--ap);cursor:pointer;}
+input[type=range].vel-range::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--vel);box-shadow:0 0 8px var(--vel);cursor:pointer;}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;}
+.slider-fill{position:absolute;left:0;top:0;bottom:0;border-radius:3px;pointer-events:none;z-index:1;}
+.iso-fill{background:linear-gradient(90deg,#00e5ff44,var(--iso));}
+.ap-fill{background:linear-gradient(90deg,#ff6b3544,var(--ap));}
+.vel-fill{background:linear-gradient(90deg,#a8ff3e44,var(--vel));}
+.slider-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;margin-top:2px;}
+.exposure-meter{margin:1rem 0;padding:1rem;background:var(--surface);border-radius:10px;border:0.5px solid var(--border);}
+.exp-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;}
+.exp-bar-wrap{position:relative;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;}
+.exp-bar-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;transition:width 0.3s,background 0.3s;}
+.exp-status{font-size:12px;margin-top:6px;font-family:'Space Mono',monospace;}
+.exp-ok{color:#a8ff3e;}
+.exp-over{color:#ff6b35;}
+.exp-under{color:#00e5ff;}
+
+/* MODE PANEL */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem;}
+.mode-btn{background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:1rem 0.75rem;cursor:pointer;transition:all 0.2s;text-align:left;}
+.mode-btn.active{border-color:rgba(255,255,255,0.25);background:var(--surface2);}
+.mode-btn .m-tag{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;display:block;}
+.mode-btn .m-name{font-size:14px;font-weight:500;color:var(--text);display:block;}
+.mode-btn .m-desc{font-size:11px;color:var(--muted);margin-top:4px;display:block;line-height:1.4;}
+.mode-card{background:var(--surface);border-radius:12px;padding:1.25rem;border:0.5px solid var(--border);}
+.mode-title{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:0.75rem;}
+.mode-row{display:flex;align-items:center;gap:12px;padding:0.6rem 0;border-bottom:0.5px solid var(--border);}
+.mode-row:last-child{border-bottom:none;}
+.mode-key{font-family:'Space Mono',monospace;font-size:11px;background:rgba(255,255,255,0.06);border:0.5px solid var(--border2);border-radius:4px;padding:3px 8px;color:var(--muted2);min-width:60px;text-align:center;}
+.mode-row-text{font-size:13px;color:#ccc;line-height:1.4;}
+.mode-row-text em{color:var(--text);font-style:normal;font-weight:500;}
+
+/* EFFECT PREVIEW */
+.effect-row{display:flex;gap:8px;margin-top:1rem;}
+.effect-box{flex:1;border-radius:8px;padding:0.6rem;text-align:center;font-size:11px;font-weight:500;}
+.effect-box.good{background:rgba(168,255,62,0.08);border:0.5px solid rgba(168,255,62,0.2);color:#a8ff3e;}
+.effect-box.warn{background:rgba(255,107,53,0.08);border:0.5px solid rgba(255,107,53,0.2);color:#ff6b35;}
+.effect-box.info{background:rgba(0,229,255,0.08);border:0.5px solid rgba(0,229,255,0.2);color:#00e5ff;}
+
+/* BOTTOM NAV feel */
+.section-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:0.75rem;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <p class="kicker">Sony a6000 · Referencia</p>
+  <h1 class="title">Triángulo de<br>Exposición</h1>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('escenarios')">Escenario</button>
+  <button class="tab" onclick="switchTab('sliders')">Simulador</button>
+  <button class="tab" onclick="switchTab('modos')">Modos</button>
+</div>
+
+<!-- PANEL 1: ESCENARIOS -->
+<div class="panel active" id="panel-escenarios">
+  <p class="section-label">¿Qué foto querés sacar?</p>
+  <div class="scenario-grid">
+    <button class="scenario-btn active" onclick="selectScenario(this,'auto')">
+      <div class="s-icon">🚗</div>
+      <span class="s-name">Auto en movimiento</span>
+      <span class="s-sub">calle / expo</span>
+    </button>
+    <button class="scenario-btn" onclick="selectScenario(this,'pajaro')">
+      <div class="s-icon">🐦</div>
+      <span class="s-name">Pájaro volando</span>
+      <span class="s-sub">campo / aire libre</span>
+    </button>
+    <button class="scenario-btn" onclick="selectScenario(this,'paisaje')">
+      <div class="s-icon">🌄</div>
+      <span class="s-name">Paisaje</span>
+      <span class="s-sub">montaña / agua</span>
+    </button>
+    <button class="scenario-btn" onclick="selectScenario(this,'retrato')">
+      <div class="s-icon">👤</div>
+      <span class="s-name">Retrato</span>
+      <span class="s-sub">persona / primer plano</span>
+    </button>
+    <button class="scenario-btn" onclick="selectScenario(this,'interior')">
+      <div class="s-icon">🏠</div>
+      <span class="s-name">Interior</span>
+      <span class="s-sub">casa / taller</span>
+    </button>
+    <button class="scenario-btn" onclick="selectScenario(this,'noche')">
+      <div class="s-icon">🌙</div>
+      <span class="s-name">Noche</span>
+      <span class="s-sub">poca luz</span>
+    </button>
+    <button class="scenario-btn" onclick="selectScenario(this,'panning')">
+      <div class="s-icon">💨</div>
+      <span class="s-name">Panning</span>
+      <span class="s-sub">fondo movido</span>
+    </button>
+    <button class="scenario-btn" onclick="selectScenario(this,'macro')">
+      <div class="s-icon">🌿</div>
+      <span class="s-name">Detalle / macro</span>
+      <span class="s-sub">flor / insecto</span>
+    </button>
+  </div>
+
+  <div class="result-card" id="scenario-result">
+    <p class="result-title">// Valores recomendados</p>
+    <div class="values-row">
+      <div class="val-block vel">
+        <div class="val-label">VELOCIDAD</div>
+        <div class="val-num" id="res-vel">1/1000</div>
+      </div>
+      <div class="val-block ap">
+        <div class="val-label">APERTURA</div>
+        <div class="val-num" id="res-ap">f/8</div>
+      </div>
+      <div class="val-block iso">
+        <div class="val-label">ISO</div>
+        <div class="val-num" id="res-iso">200</div>
+      </div>
+    </div>
+    <div class="result-tip" id="res-tip">
+      Usá <strong>modo S</strong> y fijá 1/1000. Con sol directo bajá el ISO a 100. Si el auto va muy rápido subí a 1/2000.
+    </div>
+    <div class="effect-row" id="res-effects">
+      <div class="effect-box good">movimiento congelado</div>
+      <div class="effect-box info">todo nítido</div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL 2: SLIDERS -->
+<div class="panel" id="panel-sliders">
+  <p class="section-label">Mové un valor y ves el efecto</p>
+
+  <!-- VELOCIDAD -->
+  <div class="slider-section">
+    <div class="slider-header">
+      <span class="slider-name vel">Velocidad</span>
+      <span class="slider-value" id="vel-display">1/500s</span>
+    </div>
+    <div class="slider-track">
+      <div class="slider-fill vel-fill" id="vel-fill" style="width:60%"></div>
+      <input type="range" class="vel-range" id="vel-slider" min="0" max="9" value="5" oninput="updateSliders('vel',this.value)">
+    </div>
+    <div class="slider-labels"><span>congelado</span><span>difuminado</span></div>
+  </div>
+
+  <!-- APERTURA -->
+  <div class="slider-section">
+    <div class="slider-header">
+      <span class="slider-name ap">Apertura</span>
+      <span class="slider-value" id="ap-display">f/5.6</span>
+    </div>
+    <div class="slider-track">
+      <div class="slider-fill ap-fill" id="ap-fill" style="width:40%"></div>
+      <input type="range" class="ap-range" id="ap-slider" min="0" max="6" value="3" oninput="updateSliders('ap',this.value)">
+    </div>
+    <div class="slider-labels"><span>fondo borroso</span><span>todo nítido</span></div>
+  </div>
+
+  <!-- ISO -->
+  <div class="slider-section">
+    <div class="slider-header">
+      <span class="slider-name iso">ISO</span>
+      <span class="slider-value" id="iso-display">ISO 400</span>
+    </div>
+    <div class="slider-track">
+      <div class="slider-fill iso-fill" id="iso-fill" style="width:40%"></div>
+      <input type="range" class="iso-range" id="iso-slider" min="0" max="6" value="3" oninput="updateSliders('iso',this.value)">
+    </div>
+    <div class="slider-labels"><span>imagen limpia</span><span>más ruido</span></div>
+  </div>
+
+  <!-- EXPOSURE METER -->
+  <div class="exposure-meter">
+    <div class="exp-label">// Exposición estimada</div>
+    <div class="exp-bar-wrap">
+      <div class="exp-bar-fill" id="exp-bar" style="width:55%;background:#a8ff3e;"></div>
+    </div>
+    <div class="exp-status" id="exp-status">✓ <span class="exp-ok">Exposición correcta</span></div>
+  </div>
+
+  <!-- EFFECTS -->
+  <div class="result-card">
+    <p class="result-title">// Efectos de esta combinación</p>
+    <div id="slider-effects">
+      <div class="effect-row">
+        <div class="effect-box good" id="eff-motion">movimiento congelado</div>
+        <div class="effect-box info" id="eff-depth">todo nítido</div>
+      </div>
+      <div class="effect-row" style="margin-top:8px;">
+        <div class="effect-box good" id="eff-noise">imagen limpia</div>
+      </div>
+    </div>
+    <div class="result-tip" style="margin-top:0.75rem;" id="slider-tip">
+      Buena combinación para exteriores con luz moderada.
+    </div>
+  </div>
+</div>
+
+<!-- PANEL 3: MODOS -->
+<div class="panel" id="panel-modos">
+  <p class="section-label">¿Qué modo de la cámara usar?</p>
+  <div class="mode-grid">
+    <button class="mode-btn active" onclick="selectMode(this,'A')">
+      <span class="m-tag">dial</span>
+      <span class="m-name">Modo A</span>
+      <span class="m-desc">Apertura priority</span>
+    </button>
+    <button class="mode-btn" onclick="selectMode(this,'S')">
+      <span class="m-tag">dial</span>
+      <span class="m-name">Modo S</span>
+      <span class="m-desc">Velocidad priority</span>
+    </button>
+    <button class="mode-btn" onclick="selectMode(this,'P')">
+      <span class="m-tag">dial</span>
+      <span class="m-name">Modo P</span>
+      <span class="m-desc">Programa</span>
+    </button>
+    <button class="mode-btn" onclick="selectMode(this,'M')">
+      <span class="m-tag">dial</span>
+      <span class="m-name">Modo M</span>
+      <span class="m-desc">Manual total</span>
+    </button>
+  </div>
+
+  <div class="mode-card" id="mode-detail">
+    <p class="mode-title" id="mode-title">// Modo A — Apertura Priority</p>
+    <div id="mode-content">
+      <div class="mode-row">
+        <span class="mode-key">Vos fijás</span>
+        <span class="mode-row-text"><em>Apertura (f/)</em> — cuánto entra en foco</span>
+      </div>
+      <div class="mode-row">
+        <span class="mode-key">Cámara ajusta</span>
+        <span class="mode-row-text">Velocidad de obturador automáticamente</span>
+      </div>
+      <div class="mode-row">
+        <span class="mode-key">ISO</span>
+        <span class="mode-row-text">Dejalo en <em>AUTO ISO</em> para empezar</span>
+      </div>
+      <div class="mode-row">
+        <span class="mode-key">Ideal para</span>
+        <span class="mode-row-text"><em>Paisajes, grupos, autos de cerca</em> — cuando querés control sobre nitidez del fondo</span>
+      </div>
+      <div class="mode-row">
+        <span class="mode-key">Regla</span>
+        <span class="mode-row-text">f/3.5 = fondo borroso · f/8–11 = todo nítido</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// SCENARIOS DATA
+const scenarios = {
+  auto: {
+    vel:'1/1000', ap:'f/8', iso:'200',
+    tip:'Usá <strong>modo S</strong> y fijá 1/1000. Con sol directo bajá ISO a 100. Si el auto va muy rápido subí a 1/2000.',
+    effects:['movimiento congelado','todo nítido']
+  },
+  pajaro: {
+    vel:'1/2000', ap:'f/6.3', iso:'400',
+    tip:'<strong>Modo S</strong>, 1/2000 mínimo. AF-C activado. Esperá quieto — el pájaro se acerca solo.',
+    effects:['alas congeladas','ISO moderado']
+  },
+  paisaje: {
+    vel:'1/125', ap:'f/11', iso:'100',
+    tip:'<strong>Modo A</strong>, f/11 para máxima nitidez. ISO 100 para imagen perfecta. Usá trípode si la velocidad baja de 1/60.',
+    effects:['todo nítido','imagen limpia']
+  },
+  retrato: {
+    vel:'1/200', ap:'f/3.5', iso:'200',
+    tip:'<strong>Modo A</strong>, abrí al máximo (f/3.5 con tu kit). El fondo se difumina suavemente. Enfocá siempre en los ojos.',
+    effects:['fondo suavizado','sujeto destacado']
+  },
+  interior: {
+    vel:'1/100', ap:'f/3.5', iso:'800',
+    tip:'<strong>Modo A</strong>, apertura máxima. Subí ISO hasta que la foto salga bien iluminada. Agregá luz extra si podés.',
+    effects:['apertura máxima','ISO elevado']
+  },
+  noche: {
+    vel:'1/30', ap:'f/3.5', iso:'3200',
+    tip:'Límite del kit. Con 1/30 sin trípode vas a tener movimiento. Lo ideal es trípode + 1/8s. El ruido del ISO 3200 es inevitable.',
+    effects:['mucha luz','algo de ruido']
+  },
+  panning: {
+    vel:'1/80', ap:'f/8', iso:'100',
+    tip:'<strong>Modo S</strong>, 1/80s. Seguí el auto con el cuerpo antes de disparar, apretá y continuá el movimiento. Necesita práctica.',
+    effects:['fondo difuminado','auto nítido']
+  },
+  macro: {
+    vel:'1/200', ap:'f/5.6', iso:'200',
+    tip:'Acercate despacio. Con f/5.6 la profundidad de campo es muy poca — milímetros. Estabilizate bien o usá trípode.',
+    effects:['fondo muy borroso','detalle máximo']
+  }
+};
+
+function selectScenario(btn, key) {
+  document.querySelectorAll('.scenario-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const s = scenarios[key];
+  document.getElementById('res-vel').textContent = s.vel;
+  document.getElementById('res-ap').textContent = s.ap;
+  document.getElementById('res-iso').textContent = s.iso;
+  document.getElementById('res-tip').innerHTML = s.tip;
+  const ef = document.getElementById('res-effects');
+  ef.innerHTML = s.effects.map((e,i)=>`<div class="effect-box ${i===0?'good':'info'}">${e}</div>`).join('');
+}
+
+// SLIDERS
+const velValues = ['1/2000','1/1000','1/500','1/250','1/125','1/60','1/30','1/15','1/8','1/2'];
+const apValues  = ['f/3.5','f/4','f/5.6','f/8','f/11','f/16','f/22'];
+const isoValues = ['100','200','400','800','1600','3200','6400'];
+
+const velEV = [11,10,9,8,7,6,5,4,3,2];
+const apEV  = [3,2.5,2,1.5,1,0.5,0];
+const isoEV = [0,1,2,3,4,5,6];
+
+function updateSliders(type, val) {
+  val = parseInt(val);
+  if(type==='vel'){
+    document.getElementById('vel-display').textContent = velValues[val]+'s';
+    document.getElementById('vel-fill').style.width = ((val/9)*100)+'%';
+  } else if(type==='ap'){
+    document.getElementById('ap-display').textContent = apValues[val];
+    document.getElementById('ap-fill').style.width = ((val/6)*100)+'%';
+  } else {
+    document.getElementById('iso-display').textContent = 'ISO '+isoValues[val];
+    document.getElementById('iso-fill').style.width = ((val/6)*100)+'%';
+  }
+  updateExposure();
+}
+
+function updateExposure() {
+  const v = parseInt(document.getElementById('vel-slider').value);
+  const a = parseInt(document.getElementById('ap-slider').value);
+  const i = parseInt(document.getElementById('iso-slider').value);
+  const ev = velEV[v] - apEV[a] + isoEV[i];
+  const norm = Math.min(Math.max((ev - 5) / 14, 0), 1);
+  const pct = Math.round(norm * 100);
+  const bar = document.getElementById('exp-bar');
+  const status = document.getElementById('exp-status');
+  bar.style.width = pct+'%';
+
+  // Motion effect
+  const motionEl = document.getElementById('eff-motion');
+  if(v<=2) { motionEl.className='effect-box good'; motionEl.textContent='movimiento congelado'; }
+  else if(v<=5) { motionEl.className='effect-box info'; motionEl.textContent='algo de movimiento'; }
+  else { motionEl.className='effect-box warn'; motionEl.textContent='movimiento difuminado'; }
+
+  // Depth effect
+  const depthEl = document.getElementById('eff-depth');
+  if(a<=1) { depthEl.className='effect-box warn'; depthEl.textContent='fondo muy borroso'; }
+  else if(a<=3) { depthEl.className='effect-box info'; depthEl.textContent='profundidad media'; }
+  else { depthEl.className='effect-box good'; depthEl.textContent='todo nítido'; }
+
+  // Noise effect
+  const noiseEl = document.getElementById('eff-noise');
+  if(i<=1) { noiseEl.className='effect-box good'; noiseEl.textContent='imagen limpia'; }
+  else if(i<=3) { noiseEl.className='effect-box info'; noiseEl.textContent='ruido moderado'; }
+  else { noiseEl.className='effect-box warn'; noiseEl.textContent='bastante ruido'; }
+
+  // Overall exposure
+  if(pct < 30) {
+    bar.style.background='var(--iso)';
+    status.innerHTML='↓ <span class="exp-under">Foto oscura — subí ISO o abrí apertura</span>';
+  } else if(pct > 70) {
+    bar.style.background='var(--ap)';
+    status.innerHTML='↑ <span class="exp-over">Foto quemada — bajá ISO o cerrá apertura</span>';
+  } else {
+    bar.style.background='var(--vel)';
+    status.innerHTML='✓ <span class="exp-ok">Exposición correcta</span>';
+  }
+
+  // Tip
+  const tipEl = document.getElementById('slider-tip');
+  const velStr = velValues[v];
+  const apStr = apValues[a];
+  const isoStr = isoValues[i];
+  let tip = `${velStr}s · ${apStr} · ISO ${isoStr} — `;
+  if(pct<30) tip += 'foto muy oscura con esta combinación.';
+  else if(pct>70) tip += 'foto sobrexpuesta, va a salir quemada.';
+  else if(v<=2 && a>=3) tip += 'ideal para fotos de <strong>acción y deportes</strong> con buena luz.';
+  else if(v>=6 && a<=1) tip += 'para <strong>fotos nocturnas</strong>, necesitás trípode.';
+  else if(a<=1) tip += 'buen fondo borroso para <strong>retratos</strong>.';
+  else if(a>=4) tip += 'ideal para <strong>paisajes y grupos</strong>, todo en foco.';
+  else tip += 'combinación equilibrada para condiciones normales.';
+  tipEl.innerHTML = tip;
+}
+
+// MODES
+const modes = {
+  A: {
+    title:'// Modo A — Apertura Priority',
+    rows:[
+      {key:'Vos fijás', text:'<em>Apertura (f/)</em> — cuánto entra en foco'},
+      {key:'Cámara ajusta', text:'Velocidad de obturador automáticamente'},
+      {key:'ISO', text:'Dejalo en <em>AUTO ISO</em> para empezar'},
+      {key:'Ideal para', text:'<em>Paisajes, grupos, retratos</em> — control sobre nitidez del fondo'},
+      {key:'Tip', text:'f/3.5 = fondo borroso · f/8–11 = todo nítido'}
+    ]
+  },
+  S: {
+    title:'// Modo S — Velocidad Priority',
+    rows:[
+      {key:'Vos fijás', text:'<em>Velocidad de obturador</em> — congelás o difuminás'},
+      {key:'Cámara ajusta', text:'Apertura automáticamente'},
+      {key:'ISO', text:'Dejalo en <em>AUTO ISO</em>'},
+      {key:'Ideal para', text:'<em>Autos, pájaros, deportes</em> — todo lo que se mueve'},
+      {key:'Tip', text:'1/1000 congela · 1/60–80 para panning'}
+    ]
+  },
+  P: {
+    title:'// Modo P — Programa',
+    rows:[
+      {key:'Cámara fija', text:'Apertura y velocidad automáticamente'},
+      {key:'Vos podés', text:'Girar el dial para <em>cambiar la combinación</em> (Program Shift)'},
+      {key:'ISO', text:'Dejalo en <em>AUTO ISO</em>'},
+      {key:'Ideal para', text:'<em>Aprender</em> — ves qué valores elige la cámara y por qué'},
+      {key:'Tip', text:'El mejor modo para empezar y entender la lógica'}
+    ]
+  },
+  M: {
+    title:'// Modo M — Manual Total',
+    rows:[
+      {key:'Vos controlás', text:'<em>Todo</em> — apertura, velocidad e ISO'},
+      {key:'Rueda trasera', text:'Cambia <em>apertura</em>'},
+      {key:'Rueda delantera', text:'Cambia <em>velocidad</em>'},
+      {key:'Ideal para', text:'Cuando dominás los tres valores y sabés lo que querés'},
+      {key:'Tip', text:'Mirá el medidor de exposición en la pantalla para guiarte'}
+    ]
+  }
+};
+
+function selectMode(btn, key) {
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const m = modes[key];
+  document.getElementById('mode-title').textContent = m.title;
+  document.getElementById('mode-content').innerHTML = m.rows.map(r=>`
+    <div class="mode-row">
+      <span class="mode-key">${r.key}</span>
+      <span class="mode-row-text">${r.text}</span>
+    </div>`).join('');
+}
+
+// TABS
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const tabs=['escenarios','sliders','modos'];
+    t.classList.toggle('active', tabs[i]===tab);
+  });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+}
+
+// Init
+updateExposure();
+</script>
+</body>
+</html>
